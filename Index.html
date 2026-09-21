@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="offline-ready" content="true">
+<title>Числовая прямая — игра с котиком Мурчиком • 5 класс</title>
+<style>
+  :root{
+    --paper:#FAF6EF; --ink:#332E29; --muted:#7D766C; --faint:#B9B0A2;
+    --accent:#CE7048; --accent-dark:#B55A36; --accent-soft:#F7E3D7;
+    --sage:#6F9B77; --sage-dark:#58805F; --sage-soft:#E7F0E7;
+    --red:#D65A4E; --red-soft:#FBE9E5; --card:#FFFFFF; --line:#EAE2D4;
+  }
+  html{ -webkit-tap-highlight-color: transparent; }
+  body{ font-family:'Nunito',ui-sans-serif,system-ui,sans-serif; background:var(--paper); color:var(--ink); }
+  .font-hand{ font-family:'Caveat',cursive; }
+
+  /* фоновые мягкие пятна */
+  .blob{ position:fixed; border-radius:9999px; filter:blur(70px); opacity:.5; pointer-events:none; z-index:0; }
+
+  .screen{ animation:fadeUp .55s cubic-bezier(.22,1,.36,1) both; }
+  @keyframes fadeUp{ from{opacity:0; transform:translateY(18px);} to{opacity:1; transform:none;} }
+
+  .card-pop{ animation:cardPop .5s cubic-bezier(.34,1.4,.4,1) both; }
+  @keyframes cardPop{ from{opacity:0; transform:scale(.96) translateY(10px);} to{opacity:1; transform:none;} }
+
+  .btn-primary{ background:var(--accent); color:#fff; transition:.22s cubic-bezier(.34,1.4,.4,1); box-shadow:0 6px 16px -6px rgba(206,112,72,.55), inset 0 -3px 0 rgba(0,0,0,.12); }
+  .btn-primary:hover:not(:disabled){ background:var(--accent-dark); transform:translateY(-2px); box-shadow:0 10px 20px -8px rgba(206,112,72,.6), inset 0 -3px 0 rgba(0,0,0,.12); }
+  .btn-primary:active:not(:disabled){ transform:translateY(1px) scale(.98); }
+  .btn-primary:disabled{ background:#D8D0C2; box-shadow:none; cursor:not-allowed; color:#fff; }
+
+  .btn-ghost{ background:transparent; color:var(--muted); border:2px solid var(--line); transition:.2s; }
+  .btn-ghost:hover:not(:disabled){ border-color:var(--accent); color:var(--accent); }
+  .btn-ghost:disabled{ opacity:.4; cursor:not-allowed; }
+
+  .ans-input{ background:var(--paper); border:3px solid var(--line); transition:.2s; }
+  .ans-input:focus{ outline:none; border-color:var(--accent); background:#fff; box-shadow:0 0 0 5px rgba(206,112,72,.14); }
+  .ans-input.filled{ border-color:var(--accent); background:#fff; }
+
+  .sign-btn{ width:2em; height:2em; font-size:.4em; line-height:1; flex:none;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--accent-soft); color:#8A5A3C; border:3px solid #EED7C3; border-radius:.7em;
+    touch-action:manipulation; user-select:none; -webkit-user-select:none;
+    transition:transform .2s cubic-bezier(.34,1.5,.4,1), background .2s, color .2s, border-color .2s; }
+  .sign-btn:hover{ transform:translateY(-2px); background:#F4DAC6; }
+  .sign-btn:active{ transform:scale(.88); }
+  .sign-btn.minus{ background:var(--accent); color:#fff; border-color:var(--accent); }
+
+  .name-input{ background:#fff; border:2.5px solid var(--line); transition:.2s; }
+  .name-input:focus{ outline:none; border-color:var(--accent); box-shadow:0 0 0 5px rgba(206,112,72,.13); }
+
+  /* степ-пилюли */
+  .step-pill{ transition:.3s; }
+  .step-pill.active{ background:var(--accent); color:#fff; border-color:var(--accent); }
+  .step-pill.done{ background:var(--sage-soft); color:var(--sage-dark); border-color:#CBDfCB; }
+
+  /* числовая прямая */
+  #line-wrap{ touch-action:none; }
+  #line-wrap.locked{ cursor:not-allowed; }
+  #line-wrap.unlocked{ cursor:crosshair; }
+
+  .hint-wiggle{ animation:wiggle .45s ease; }
+  @keyframes wiggle{ 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 50%{transform:translateX(5px)} 75%{transform:translateX(-3px)} }
+
+  /* котик */
+  .kitten-bob{ animation:bob 3.2s ease-in-out infinite; transform-origin:50% 100%; }
+  @keyframes bob{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(-7px)} }
+  .paw-wave{ animation:wave 1.3s ease-in-out infinite; transform-box:fill-box; transform-origin:20% 90%; }
+  @keyframes wave{ 0%,100%{transform:rotate(0deg)} 40%{transform:rotate(-24deg)} 70%{transform:rotate(-12deg)} }
+  .blink-eyes{ animation:blink 4.6s infinite; transform-box:fill-box; transform-origin:center; }
+  @keyframes blink{ 0%,93%,100%{transform:scaleY(1)} 96%{transform:scaleY(.15)} }
+
+  #kitten-pop{ transition:transform .55s cubic-bezier(.3,1.5,.4,1), opacity .4s ease; }
+  #kitten-pop.hiddenpop{ transform:translateY(40px) scale(.7); opacity:0; pointer-events:none; }
+  .bubble-tail{ position:absolute; bottom:-9px; right:44px; width:0; height:0; border-left:10px solid transparent; border-right:10px solid transparent; border-top:11px solid #fff; }
+
+  /* конфетти */
+  .burst-dot{ position:fixed; width:9px; height:9px; border-radius:99px; z-index:80; pointer-events:none; animation:burst .85s cubic-bezier(.2,.8,.4,1) forwards; }
+  @keyframes burst{ 0%{transform:translate(0,0) scale(1); opacity:1;} 100%{transform:translate(var(--dx),var(--dy)) scale(.3); opacity:0;} }
+
+  .score-pulse{ animation:pulse .5s cubic-bezier(.34,1.5,.4,1); }
+  @keyframes pulse{ 0%{transform:scale(1)} 40%{transform:scale(1.28)} 100%{transform:scale(1)} }
+
+  tr.rowline{ border-bottom:1.5px solid var(--line); }
+  tr.rowline:last-child{ border-bottom:none; }
+
+  ::selection{ background:var(--accent-soft); }
+</style>
+
+<style id="offline-tailwind-compat">
+.-mt-1{margin-top:-0.25rem;}
+.absolute{position:absolute;}
+.bg-\[\#E7F0E7\]{background-color:#E7F0E7;}
+.bg-\[\#EFE7DA\]{background-color:#EFE7DA;}
+.bg-\[\#F1EDE4\]{background-color:#F1EDE4;}
+.bg-\[\#F7E3D7\]{background-color:#F7E3D7;}
+.bg-\[\#FAF6EF\]{background-color:#FAF6EF;}
+.bg-\[\#FBE9E5\]{background-color:#FBE9E5;}
+.bg-\[\#FBF3EA\]{background-color:#FBF3EA;}
+.bg-\[\#FFFDF9\]{background-color:#FFFDF9;}
+.bg-gradient-to-r{background-image:linear-gradient(to right,var(--tw-gradient-from),var(--tw-gradient-to));}
+.bg-white{background-color:#fff;}
+.block{display:block;}
+.border{border-width:1px;border-style:solid;}
+.border-2{border-width:2px;border-style:solid;}
+.border-\[\#E5DECE\]{border-color:#E5DECE;}
+.border-\[\#EAE2D4\]{border-color:#EAE2D4;}
+.border-\[\#EFD2BE\]{border-color:#EFD2BE;}
+.border-\[\#EFE2D3\]{border-color:#EFE2D3;}
+.border-\[\#EFE7DA\]{border-color:#EFE7DA;}
+.border-\[\#F4CEC6\]{border-color:#F4CEC6;}
+.border-t{border-top-width:1px;border-top-style:solid;}
+.bottom-3{bottom:.75rem;}
+.cursor-pointer{cursor:pointer;}
+.decoration-\[3px\]{text-decoration-thickness:3px;}
+.duration-500{transition-duration:500ms;}
+.fill-\[\#F2C94C\]{fill:#F2C94C;}
+.fixed{position:fixed;}
+.flex{display:flex;}
+.flex-1{flex:1 1 0%;}
+.flex-col{flex-direction:column;}
+.flex-wrap{flex-wrap:wrap;}
+.font-black{font-weight:900;}
+.font-bold{font-weight:700;}
+.font-semibold{font-weight:600;}
+.from-\[\#E5A87E\]{--tw-gradient-from:#E5A87E;}
+.gap-0{gap:0;}
+.gap-1\.5{gap:0.375rem;}
+.gap-2{gap:0.5rem;}
+.gap-2\.5{gap:0.625rem;}
+.gap-3{gap:0.75rem;}
+.gap-4{gap:1rem;}
+.gap-6{gap:1.5rem;}
+.gap-x-6{column-gap:1.5rem;}
+.gap-y-2{row-gap:0.5rem;}
+.grid{display:grid;}
+.h-28{height:7rem;}
+.h-3\.5{height:0.875rem;}
+.h-4{height:1rem;}
+.h-4\.5{height:1.125rem;}
+.h-5{height:1.25rem;}
+.h-6{height:1.5rem;}
+.h-7{height:1.75rem;}
+.h-8{height:2rem;}
+.h-9{height:2.25rem;}
+.h-\[300px\]{height:300px;}
+.h-\[380px\]{height:380px;}
+.h-\[420px\]{height:420px;}
+.h-auto{height:auto;}
+.h-full{height:100%;}
+.hidden{display:none;}
+.inline-flex{display:inline-flex;}
+.items-center{align-items:center;}
+.items-end{align-items:flex-end;}
+.items-start{align-items:flex-start;}
+.items-stretch{align-items:stretch;}
+.justify-between{justify-content:space-between;}
+.justify-center{justify-content:center;}
+.leading-\[1\.05\]{line-height:1.05;}
+.leading-none{line-height:1;}
+.leading-tight{line-height:1.25;}
+.left-1\/4{left:25%;}
+.line-through{text-decoration-line:line-through;}
+.max-w-5xl{max-width:36rem;}
+.mb-1{margin-bottom:0.25rem;}
+.mb-3{margin-bottom:0.75rem;}
+.mb-5{margin-bottom:1.25rem;}
+.mb-8{margin-bottom:2rem;}
+.min-h-\[1\.5em\]{min-height:1.5em;}
+.min-h-\[2\.4rem\]{min-height:2.4rem;}
+.min-h-screen{min-height:100vh;}
+.min-w-0{min-width:0;}
+.min-w-\[200px\]{min-width:200px;}
+.mr-2{margin-right:0.5rem;}
+.mt-0\.5{margin-top:0.125rem;}
+.mt-1{margin-top:0.25rem;}
+.mt-2{margin-top:0.5rem;}
+.mt-3{margin-top:0.75rem;}
+.mt-4{margin-top:1rem;}
+.mt-5{margin-top:1.25rem;}
+.mt-6{margin-top:1.5rem;}
+.mx-auto{margin-left:auto;margin-right:auto;}
+.opacity-70{opacity:.7;}
+.opacity-80{opacity:.8;}
+.overflow-hidden{overflow:hidden;}
+.overflow-visible{overflow:visible;}
+.overflow-x-hidden{overflow-x:hidden;}
+.p-5{padding:1.25rem;}
+.p-6{padding:1.5rem;}
+.pb-1\.5{padding-bottom:0.375rem;}
+.pl-2{padding-left:0.5rem;}
+.pl-4{padding-left:1rem;}
+.pr-2{padding-right:0.5rem;}
+.pr-4{padding-right:1rem;}
+.pt-1{padding-top:0.25rem;}
+.pt-4{padding-top:1rem;}
+.px-1{padding-left:0.25rem;padding-right:0.25rem;}
+.px-2{padding-left:0.5rem;padding-right:0.5rem;}
+.px-3\.5{padding-left:0.875rem;padding-right:0.875rem;}
+.px-4{padding-left:1rem;padding-right:1rem;}
+.px-5{padding-left:1.25rem;padding-right:1.25rem;}
+.px-7{padding-left:1.75rem;padding-right:1.75rem;}
+.px-8{padding-left:2rem;padding-right:2rem;}
+.py-1{padding-top:0.25rem;padding-bottom:0.25rem;}
+.py-1\.5{padding-top:0.375rem;padding-bottom:0.375rem;}
+.py-2{padding-top:0.5rem;padding-bottom:0.5rem;}
+.py-2\.5{padding-top:0.625rem;padding-bottom:0.625rem;}
+.py-3{padding-top:0.75rem;padding-bottom:0.75rem;}
+.py-3\.5{padding-top:0.875rem;padding-bottom:0.875rem;}
+.py-4{padding-top:1rem;padding-bottom:1rem;}
+.py-6{padding-top:1.5rem;padding-bottom:1.5rem;}
+.relative{position:relative;}
+.right-3{right:.75rem;}
+.rounded-2xl{border-radius:1rem;}
+.rounded-3xl{border-radius:1.5rem;}
+.rounded-\[22px\]{border-radius:22px;}
+.rounded-\[24px\]{border-radius:24px;}
+.rounded-\[28px\]{border-radius:28px;}
+.rounded-\[32px\]{border-radius:32px;}
+.rounded-full{border-radius:9999px;}
+.rounded-lg{border-radius:0.5rem;}
+.rounded-xl{border-radius:0.75rem;}
+.select-none{user-select:none;}
+.shadow-\[0_16px_36px_-16px_rgba\(51\,46\,41\,\.4\)\]{box-shadow:0_16px_36px_-16px_rgba(51,46,41,.4);}
+.shadow-\[0_18px_40px_-24px_rgba\(51\,46\,41\,\.2\)\]{box-shadow:0_18px_40px_-24px_rgba(51,46,41,.2);}
+.shadow-\[0_18px_40px_-24px_rgba\(51\,46\,41\,\.25\)\]{box-shadow:0_18px_40px_-24px_rgba(51,46,41,.25);}
+.shadow-\[0_18px_40px_-24px_rgba\(51\,46\,41\,\.28\)\]{box-shadow:0_18px_40px_-24px_rgba(51,46,41,.28);}
+.shadow-sm{box-shadow:0 1px 2px rgba(0,0,0,.05);}
+.shrink-0{flex-shrink:0;}
+.text-2xl{font-size:1.5rem;}
+.text-3xl{font-size:1.875rem;}
+.text-\[\#332E29\]{color:#332E29;}
+.text-\[\#4A443C\]{color:#4A443C;}
+.text-\[\#58805F\]{color:#58805F;}
+.text-\[\#7D766C\]{color:#7D766C;}
+.text-\[\#8A5A3C\]{color:#8A5A3C;}
+.text-\[\#B55A36\]{color:#B55A36;}
+.text-\[\#B9B0A2\]{color:#B9B0A2;}
+.text-\[\#C05B4E\]{color:#C05B4E;}
+.text-\[\#CE7048\]{color:#CE7048;}
+.text-\[\#E3A93B\]{color:#E3A93B;}
+.text-\[1\.35rem\]{font-size:1.35rem;}
+.text-\[10px\]{font-size:10px;}
+.text-\[11px\]{font-size:11px;}
+.text-\[clamp\(2\.4rem\,7vw\,4\.2rem\)\]{font-size:clamp(2.4rem,7vw,4.2rem);}
+.text-\[clamp\(2rem\,6\.5vw\,3\.4rem\)\]{font-size:clamp(2rem,6.5vw,3.4rem);}
+.text-base{font-size:1rem;}
+.text-center{text-align:center;}
+.text-left{text-align:left;}
+.text-lg{font-size:1.125rem;}
+.text-right{text-align:right;}
+.text-sm{font-size:0.875rem;}
+.text-white{color:#fff;}
+.text-xl{font-size:1.25rem;}
+.text-xs{font-size:0.75rem;}
+.to-\[\#CE7048\]{--tw-gradient-to:#CE7048;}
+.top-1\/3{top:33.333333%;}
+.tracking-tight{letter-spacing:-.025em;}
+.tracking-wider{letter-spacing:.05em;}
+.tracking-widest{letter-spacing:.1em;}
+.transition-all{transition-property:all;}
+.transition-colors{transition-property:color,background-color,border-color,text-decoration-color,fill,stroke;}
+.uppercase{text-transform:uppercase;}
+.w-10{width:2.5rem;}
+.w-24{width:6rem;}
+.w-28{width:7rem;}
+.w-3\.5{width:0.875rem;}
+.w-4{width:1rem;}
+.w-4\.5{width:1.125rem;}
+.w-40{width:10rem;}
+.w-5{width:1.25rem;}
+.w-6{width:1.5rem;}
+.w-7{width:1.75rem;}
+.w-8{width:2rem;}
+.w-9{width:2.25rem;}
+.w-\[3\.2ch\]{width:3.2ch;}
+.w-\[300px\]{width:300px;}
+.w-\[380px\]{width:380px;}
+.w-\[420px\]{width:420px;}
+.w-full{width:100%;}
+.z-10{z-index:10;}
+.z-50{z-index:50;}
+@media(min-width:640px){.sm\:gap-3{gap:0.75rem;}.sm\:p-6{padding:1.5rem;}.sm\:p-8{padding:2rem;}.sm\:p-9{padding:2.25rem;}.sm\:pl-5{padding-left:1.25rem;}.sm\:pr-5{padding-right:1.25rem;}.sm\:px-10{padding-left:2.5rem;padding-right:2.5rem;}.sm\:px-3{padding-left:0.75rem;padding-right:0.75rem;}.sm\:px-5{padding-left:1.25rem;padding-right:1.25rem;}.sm\:px-6{padding-left:1.5rem;padding-right:1.5rem;}.sm\:py-10{padding-top:2.5rem;padding-bottom:2.5rem;}.sm\:text-2xl{font-size:1.5rem;}.sm\:text-3xl{font-size:1.875rem;}.sm\:text-4xl{font-size:2.25rem;}.sm\:text-\[15px\]{font-size:15px;}.sm\:text-base{font-size:1rem;}.sm\:text-lg{font-size:1.125rem;}.sm\:text-sm{font-size:0.875rem;}.sm\:text-xs{font-size:0.75rem;}.sm\:w-28{width:7rem;}}
+.space-y-3\.5>*+*{margin-top:.875rem}.space-y-2\.5>*+*{margin-top:.625rem}.animate-spin{animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+
+</style>
+<script>
+(function(){
+  window.lucide = window.lucide || {
+    createIcons:function(){
+      document.querySelectorAll('[data-lucide]').forEach(function(el){
+        if(!el.innerHTML.trim()){
+          var n=(el.getAttribute('data-lucide')||'').toLowerCase();
+          var map={play:'▶',camera:'▣',pencil:'✎','pencil-line':'✎','paw-print':'🐾',
+            image:'▧','image-down':'⇩',send:'➤','rotate-ccw':'↻',check:'✓',
+            x:'×','loader-circle':'◌','arrow-right':'→','arrow-left':'←',clock:'◷'};
+          el.textContent=map[n]||'•';
+        }
+      });
+    }
+  };
+
+  async function renderShotToJpeg(el){
+    // Prefer html2canvas when it is present (e.g. if a user later reconnects
+    // the original library). Offline fallback uses SVG foreignObject.
+    if(window.html2canvas){
+      var c=await window.html2canvas(el,{backgroundColor:'#FAF6EF',scale:2,useCORS:true,logging:false});
+      return c.toDataURL('image/jpeg',0.94);
+    }
+    var r=el.getBoundingClientRect();
+    var w=Math.max(320,Math.ceil(r.width*2)), h=Math.max(240,Math.ceil(r.height*2));
+    var clone=el.cloneNode(true);
+    clone.querySelectorAll('button,input,script,style').forEach(function(x){x.remove();});
+    var cssText='';
+    try{ cssText=Array.from(document.styleSheets).map(function(ss){
+      try{return Array.from(ss.cssRules).map(function(rule){return rule.cssText}).join('\n')}catch(e){return ''}
+    }).join('\n'); }catch(e){}
+    var serialized=new XMLSerializer().serializeToString(clone);
+    var svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'"><foreignObject width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml" style="width:'+w/2+'px;min-height:'+h/2+'px;background:#FAF6EF;"><style>'+cssText+'</style>'+serialized+'</div></foreignObject></svg>';
+    var blob=new Blob([svg],{type:'image/svg+xml;charset=utf-8'});
+    var url=URL.createObjectURL(blob);
+    try{
+      var img=await new Promise(function(resolve,reject){var i=new Image();i.onload=function(){resolve(i)};i.onerror=reject;i.src=url;});
+      var canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
+      var ctx=canvas.getContext('2d');ctx.fillStyle='#FAF6EF';ctx.fillRect(0,0,w,h);ctx.drawImage(img,0,0,w,h);
+      return canvas.toDataURL('image/jpeg',0.94);
+    }finally{URL.revokeObjectURL(url);}
+  }
+
+  window.__murzikRenderJPEG=renderShotToJpeg;
+})();
+</script>
+</head>
+<body class="min-h-screen overflow-x-hidden">
+
+<!-- фоновые пятна -->
+<div class="blob w-[420px] h-[420px] -top-24 -left-24" style="background:#F3D9C6"></div>
+<div class="blob w-[380px] h-[380px] top-1/3 -right-32" style="background:#DCE7DC"></div>
+<div class="blob w-[300px] h-[300px] -bottom-20 left-1/4" style="background:#F6E5C9"></div>
+
+<main class="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+
+  <!-- ================= СТАРТ ================= -->
+  <section id="scr-start" class="screen">
+    <div class="text-center mb-8">
+      <span class="inline-flex items-center gap-2 bg-white border border-[#EAE2D4] rounded-full px-4 py-1.5 text-sm font-bold text-[#7D766C] shadow-sm">
+        <i data-lucide="ruler" class="w-4 h-4 text-[#CE7048]"></i>
+        5 класс • Целые числа от −10 до 30
+      </span>
+      <h1 class="mt-4 font-black tracking-tight text-[clamp(2.4rem,7vw,4.2rem)] leading-[1.05]">
+        Числовая <span class="text-[#CE7048]">прямая</span>
+      </h1>
+      <p class="mt-3 text-[#7D766C] font-semibold text-base sm:text-lg max-w-xl mx-auto">
+        Весёлый тренажёр с котиком <span class="text-[#CE7048] font-black">Мурчиком</span>: 30 примеров на сложение и вычитание. Отмечай точки, тяни стрелочки и собирай баллы!
+      </p>
+    </div>
+
+    <div class="grid md:grid-cols-[1.2fr_1fr] gap-6 items-stretch">
+
+      <!-- форма -->
+      <div class="card-pop bg-white rounded-[28px] border border-[#EAE2D4] shadow-[0_18px_40px_-24px_rgba(51,46,41,.25)] p-6 sm:p-8 flex flex-col">
+        <h2 class="font-black text-xl sm:text-2xl flex items-center gap-2">
+          <i data-lucide="paw-print" class="w-6 h-6 text-[#CE7048]"></i> Давай знакомиться!
+        </h2>
+        <p class="text-[#7D766C] font-semibold mt-1 text-sm">Впиши имя и фамилию — они попадут в твою статистику.</p>
+
+        <div class="mt-5 space-y-3.5">
+          <input id="inp-name" class="name-input w-full rounded-2xl px-5 py-3.5 font-bold text-lg" type="text" maxlength="30" placeholder="Имя" autocomplete="off">
+          <input id="inp-surname" class="name-input w-full rounded-2xl px-5 py-3.5 font-bold text-lg" type="text" maxlength="30" placeholder="Фамилия" autocomplete="off">
+        </div>
+
+        <button id="btn-start" class="btn-primary mt-6 w-full rounded-2xl py-4 font-black text-lg flex items-center justify-center gap-2" disabled>
+          <i data-lucide="play" class="w-5 h-5"></i> Начать игру
+        </button>
+        <p class="mt-3 text-center text-xs font-bold text-[#B9B0A2] flex items-center justify-center gap-1.5">
+          <i data-lucide="camera" class="w-3.5 h-3.5"></i> В конце статистику можно сохранить JPEG или отправить через меню «Поделиться»
+        </p>
+      </div>
+
+      <!-- котик и правила -->
+      <div class="card-pop bg-[#FFFDF9] rounded-[28px] border border-[#EAE2D4] shadow-[0_18px_40px_-24px_rgba(51,46,41,.2)] p-6 sm:p-8 flex flex-col items-center" style="animation-delay:.1s">
+        <div id="start-kitten" class="kitten-bob w-40 sm:w-44"></div>
+        <div class="font-hand text-2xl text-[#B55A36] -mt-1">Мур! Я буду тебя подбадривать!</div>
+
+        <div class="w-full mt-5 space-y-2.5 text-sm font-bold text-[#7D766C]">
+          <div class="flex items-center gap-3 bg-white rounded-2xl border border-[#EFE7DA] px-4 py-3">
+            <span class="w-8 h-8 shrink-0 rounded-xl bg-[#F7E3D7] text-[#B55A36] flex items-center justify-center"><i data-lucide="pencil-line" class="w-4 h-4"></i></span>
+            Реши пример и впиши ответ в окошко
+          </div>
+          <div class="flex items-center gap-3 bg-white rounded-2xl border border-[#EFE7DA] px-4 py-3">
+            <span class="w-8 h-8 shrink-0 rounded-xl bg-[#F7E3D7] text-[#B55A36] flex items-center justify-center"><i data-lucide="map-pin" class="w-4 h-4"></i></span>
+            Отметь на прямой точку, с которой начинаем
+          </div>
+          <div class="flex items-center gap-3 bg-white rounded-2xl border border-[#EFE7DA] px-4 py-3">
+            <span class="w-8 h-8 shrink-0 rounded-xl bg-[#F7E3D7] text-[#B55A36] flex items-center justify-center"><i data-lucide="move-right" class="w-4 h-4"></i></span>
+            Потяни стрелочку на нужное число делений
+          </div>
+          <p class="text-xs text-center pt-1 text-[#B9B0A2]">Красная цифра сверху покажет, сколько делений ты прошёл</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= ИГРА ================= -->
+  <section id="scr-game" class="screen hidden">
+
+    <!-- HUD -->
+    <div class="flex items-center justify-between gap-3 mb-3">
+      <div class="flex items-center gap-2.5">
+        <div id="hud-kitten" class="w-9 h-9"></div>
+        <div>
+          <div id="hud-task" class="font-black text-base sm:text-lg leading-tight">Пример 1 из 30</div>
+          <div class="text-xs font-bold text-[#B9B0A2]">Числовая прямая • 5 класс</div>
+        </div>
+      </div>
+      <div id="hud-score" class="flex items-center gap-1.5 bg-white border border-[#EAE2D4] rounded-full px-4 py-2 shadow-sm font-black text-[#B55A36]">
+        <i data-lucide="star" class="w-4.5 h-4.5 fill-[#F2C94C] text-[#E3A93B] w-5 h-5"></i>
+        <span id="score-num">0</span>
+      </div>
+    </div>
+    <div class="h-2.5 rounded-full bg-[#EFE7DA] overflow-hidden mb-5">
+      <div id="bar-fill" class="h-full rounded-full bg-gradient-to-r from-[#E5A87E] to-[#CE7048] transition-all duration-500" style="width:0%"></div>
+    </div>
+
+    <!-- основная карточка -->
+    <div id="task-card" class="card-pop bg-white rounded-[28px] border border-[#EAE2D4] shadow-[0_18px_40px_-24px_rgba(51,46,41,.28)] p-5 sm:p-8">
+
+      <!-- степ-пилюли -->
+      <div class="flex flex-wrap gap-2 mb-5">
+        <span id="pill-1" class="step-pill active inline-flex items-center gap-1.5 border-2 border-[#EAE2D4] rounded-full px-3.5 py-1.5 text-xs sm:text-sm font-black text-[#7D766C]">1 · Реши пример</span>
+        <span id="pill-2" class="step-pill inline-flex items-center gap-1.5 border-2 border-[#EAE2D4] rounded-full px-3.5 py-1.5 text-xs sm:text-sm font-black text-[#7D766C]">2 · Отметь точку</span>
+        <span id="pill-3" class="step-pill inline-flex items-center gap-1.5 border-2 border-[#EAE2D4] rounded-full px-3.5 py-1.5 text-xs sm:text-sm font-black text-[#7D766C]">3 · Потяни стрелочку</span>
+      </div>
+
+      <!-- пример -->
+      <div class="text-center select-none">
+        <div id="equation" class="inline-flex items-center justify-center flex-wrap gap-2 sm:gap-3 font-black text-[clamp(2rem,6.5vw,3.4rem)] leading-none">
+          <span id="eq-a" class="px-1">3</span>
+          <span id="eq-op" class="text-[#CE7048] px-1">+</span>
+          <span id="eq-b" class="px-1">4</span>
+          <span class="text-[#B9B0A2] px-1">=</span>
+          <span class="inline-flex items-center gap-2 sm:gap-3">
+            <span class="relative inline-flex items-center">
+              <input id="inp-ans" class="ans-input rounded-2xl w-[3.2ch] text-center py-1 font-black" type="text" inputmode="numeric" maxlength="3" placeholder="?" autocomplete="off" aria-label="Ответ">
+              <span id="ans-static" class="hidden items-center gap-3"></span>
+            </span>
+            <button id="btn-sign" type="button" class="sign-btn" aria-label="Поставить или убрать минус">±</button>
+          </span>
+        </div>
+
+        <p id="hint" class="mt-4 text-sm sm:text-base font-bold text-[#7D766C] min-h-[1.5em] transition-colors">
+          Шаг 1. Впиши ответ в окошко — и бегом к числовой прямой!
+        </p>
+      </div>
+
+      <!-- числовая прямая -->
+      <div id="line-wrap" class="locked relative mt-2 rounded-3xl bg-[#FFFDF9] border border-[#EFE7DA] px-1 sm:px-3 py-2 select-none">
+        <svg id="svg-line" viewBox="0 0 1000 152" class="w-full block" preserveAspectRatio="xMidYMid meet">
+          <!-- ось и стрелочка -->
+          <line x1="20" y1="84" x2="966" y2="84" stroke="#4A443C" stroke-width="3.5" stroke-linecap="round"/>
+          <polygon points="986,84 961,75.5 961,92.5" fill="#4A443C"/>
+          <g id="g-ticks"></g>
+          <!-- слой правильного решения (показывается при исправлении) -->
+          <g id="g-correct"></g>
+          <!-- слой ученика -->
+          <g id="g-user"></g>
+          <g id="g-markers"></g>
+          <!-- захват касаний -->
+          <rect id="hit" x="0" y="0" width="1000" height="152" fill="rgba(0,0,0,0)"/>
+        </svg>
+        <!-- бейджики -->
+        <div id="chips" class="flex flex-wrap items-center justify-center gap-2 min-h-[2.4rem] pb-1.5"></div>
+      </div>
+
+      <!-- баннер обратной связи -->
+      <div id="banner" class="hidden mt-4 rounded-2xl px-5 py-4 flex items-start gap-3">
+        <span id="banner-icon" class="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center"></span>
+        <div class="min-w-0">
+          <div id="banner-text" class="font-black text-base sm:text-lg"></div>
+          <div id="banner-explain" class="text-sm font-bold mt-0.5 opacity-80"></div>
+        </div>
+      </div>
+
+      <!-- кнопки -->
+      <div class="mt-5 flex items-center justify-between gap-3">
+        <button id="btn-reset" class="btn-ghost rounded-2xl px-4 sm:px-5 py-3.5 font-black text-sm sm:text-base flex items-center gap-2" disabled>
+          <i data-lucide="eraser" class="w-4.5 h-4.5 w-5 h-5"></i><span class="hidden sm:inline">Стереть</span>
+        </button>
+        <button id="btn-main" class="btn-primary rounded-2xl px-8 sm:px-10 py-3.5 font-black text-base sm:text-lg flex items-center gap-2" disabled>
+          <span id="btn-main-label">Проверить</span>
+          <i id="btn-main-icon" data-lucide="check-check" class="w-5 h-5"></i>
+        </button>
+      </div>
+    </div>
+
+    <p class="mt-4 text-center text-xs font-bold text-[#B9B0A2] flex items-center justify-center gap-1.5">
+      <i data-lucide="mouse-pointer-2" class="w-3.5 h-3.5"></i>
+      Зажми точку на прямой и потяни — стрелочка сама покажет, сколько делений ты прошёл
+    </p>
+  </section>
+
+  <!-- ================= РЕЗУЛЬТАТЫ ================= -->
+  <section id="scr-results" class="screen hidden">
+    <div id="result-shot" class="bg-[#FAF6EF] rounded-[32px] border border-[#EAE2D4] overflow-hidden">
+      <div class="p-6 sm:p-9">
+        <!-- шапка -->
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <div class="text-xs font-black tracking-widest uppercase text-[#B9B0A2]">Числовая прямая • 5 класс • целые числа от −10 до 30</div>
+            <h2 id="res-title" class="font-black text-3xl sm:text-4xl mt-1">Игра окончена!</h2>
+          </div>
+          <div id="res-kitten" class="w-24 sm:w-28 kitten-bob"></div>
+        </div>
+
+        <div class="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2 font-bold text-[#7D766C]">
+          <span class="inline-flex items-center gap-2"><i data-lucide="user-round" class="w-4.5 h-4.5 w-5 h-5 text-[#CE7048]"></i><span id="res-name" class="text-[#332E29] font-black"></span></span>
+          <span class="inline-flex items-center gap-2"><i data-lucide="calendar-days" class="w-5 h-5 text-[#CE7048]"></i><span id="res-date"></span></span>
+        </div>
+
+        <!-- итог -->
+        <div class="mt-6 bg-white rounded-[24px] border border-[#EAE2D4] p-5 sm:p-6 flex flex-wrap items-center gap-6">
+          <div class="relative w-28 h-28 shrink-0">
+            <div id="res-ring" class="absolute inset-0 rounded-full" style="background:conic-gradient(#6F9B77 0%, #EDE6D9 0)"></div>
+            <div class="absolute inset-[9px] rounded-full bg-white flex flex-col items-center justify-center">
+              <span id="res-pct" class="font-black text-2xl leading-none">0%</span>
+              <span class="text-[10px] font-black text-[#B9B0A2] tracking-wider">ВЕРНО</span>
+            </div>
+          </div>
+          <div class="min-w-[200px] flex-1">
+            <div class="font-black text-2xl sm:text-3xl"><span id="res-score">0</span> <span class="text-[#B9B0A2]">из 30 баллов</span></div>
+            <div id="res-verdict" class="mt-1 font-bold text-[#7D766C]"></div>
+            <div class="mt-3 flex gap-4 text-sm font-black">
+              <span class="inline-flex items-center gap-1.5 text-[#58805F]"><i data-lucide="circle-check" class="w-4 h-4"></i><span id="res-ok">0</span> верно</span>
+              <span class="inline-flex items-center gap-1.5 text-[#C05B4E]"><i data-lucide="circle-x" class="w-4 h-4"></i><span id="res-bad">0</span> с ошибкой</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- таблица -->
+        <div class="mt-5 bg-white rounded-[24px] border border-[#EAE2D4] overflow-hidden">
+          <table class="w-full text-sm sm:text-[15px]">
+            <thead>
+              <tr class="bg-[#FBF3EA] text-[#8A5A3C] font-black text-left">
+                <th class="py-3 pl-4 sm:pl-5 pr-2 w-10">№</th>
+                <th class="py-3 px-2">Задание</th>
+                <th class="py-3 px-2">Мой ответ</th>
+                <th class="py-3 px-2">Верно</th>
+                <th class="py-3 pl-2 pr-4 sm:pr-5 text-right w-16">Балл</th>
+              </tr>
+            </thead>
+            <tbody id="res-tbody"></tbody>
+          </table>
+        </div>
+
+        <div class="mt-5 pt-4 border-t border-[#EAE2D4] flex items-center justify-between text-[11px] sm:text-xs font-bold text-[#B9B0A2]">
+          <span class="inline-flex items-center gap-1.5"><i data-lucide="paw-print" class="w-3.5 h-3.5 text-[#CE7048]"></i> Мурчик гордится тобой!</span>
+          <span>Игра «Числовая прямая» • тренажёр по математике</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- кнопки вне картинки -->
+    <div class="mt-6 flex flex-wrap justify-center gap-3">
+      <button id="btn-save" class="btn-primary rounded-2xl px-7 py-4 font-black text-base sm:text-lg flex items-center gap-2">
+        <i data-lucide="image-down" class="w-5 h-5"></i> Сохранить картинку
+      </button>
+      <button id="btn-again" class="btn-ghost rounded-2xl px-7 py-4 font-black text-base sm:text-lg flex items-center gap-2">
+        <i data-lucide="rotate-ccw" class="w-5 h-5"></i> Пройти ещё раз
+      </button>
+    </div>
+    <p class="mt-3 text-center text-sm font-bold text-[#7D766C] flex items-center justify-center gap-2">
+      <i data-lucide="send" class="w-4 h-4 text-[#CE7048]"></i> На телефоне через «Поделиться» можно выбрать «Сохранить изображение» или «Сохранить в Файлы».
+    </p>
+  </section>
+</main>
+
+<!-- всплывающий котик -->
+<div id="kitten-pop" class="hiddenpop fixed right-3 bottom-3 sm:right-7 sm:bottom-7 z-50 flex flex-col items-end gap-0 max-w-[260px] cursor-pointer">
+  <div class="relative bg-white rounded-[22px] border border-[#EFE2D3] shadow-[0_16px_36px_-16px_rgba(51,46,41,.4)] px-5 py-3.5 mb-1 mr-2">
+    <div id="pop-text" class="font-hand text-[1.35rem] leading-tight text-[#8A5A3C]">Мур!</div>
+    <div class="bubble-tail"></div>
+  </div>
+  <div id="pop-kitten" class="w-28 sm:w-32 kitten-bob"></div>
+</div>
+
+<script>
+/* ============================================================
+   ДАННЫЕ: 30 заданий  [a, операция, b]  →  a ± b
+   Все числа и результаты в пределах −10 … 30
+============================================================ */
+const TASKS = [
+  [ 3,'+', 4],[ 9,'-', 5],[ 6,'+', 7],[15,'-', 6],[ 8,'-',10],
+  [ 2,'+',11],[-3,'+', 5],[12,'-', 8],[-4,'+', 6],[ 7,'-',12],
+  [-2,'+', 8],[18,'-', 9],[-5,'+', 9],[11,'-',15],[14,'+', 6],
+  [-6,'+',10],[20,'-', 7],[-8,'+',12],[ 5,'-', 9],[16,'+', 8],
+  [-7,'+',10],[22,'-', 9],[25,'+', 5],[-9,'+', 8],[-6,'+',14],
+  [21,'-',12],[-1,'-', 6],[13,'+', 9],[17,'-',20],[-10,'+',17]
+];
+
+const PHRASES = [
+  'Отлично справляешься! Продолжай в том же духе!',
+  'Помни: прибавляем — идём вправо, вычитаем — влево!',
+  'Мур-мур! У тебя здорово получается!',
+  'Не бойся минусов — отрицательные числа совсем не страшные!',
+  'Считай деления внимательно, не спеши!',
+  'Каждый пример делает тебя сильнее в математике!',
+  'Внимательно смотри на знак: плюс или минус?',
+  'Ты умница! Я горжусь тобой!',
+  'Если ошибся — не беда! Главное понять, как правильно.',
+  'Дыши спокойно и считай — у тебя всё получится!',
+  'Числовая прямая — твой лучший помощник!',
+  'Котики верят в тебя! Мур!',
+  'Ух ты, как здорово! Так держать!',
+  'Ещё чуть-чуть — и ты станешь чемпионом прямой!'
+];
+
+/* ============================================================
+   СОСТОЯНИЕ
+============================================================ */
+const S = {
+  name:'', surname:'', idx:0, score:0,
+  stats:[],            // {a,op,b,res,userAns,ansOk,lineOk,ok}
+  startVal:null, endVal:null,
+  dragging:false, checked:false, okNow:false
+};
+const res  = t => t[0] + (t[1]==='+' ? t[2] : -t[2]);
+const fmt  = n => (n<0 ? '−'+Math.abs(n) : ''+n);
+const fmtD = n => (n>0 ? '+'+n : n<0 ? '−'+Math.abs(n) : '0');
+const $ = id => document.getElementById(id);
+const cur = () => TASKS[S.idx];
+
+function icons(){ if(window.lucide) lucide.createIcons(); }
+
+/* ============================================================
+   КОТИК (SVG)
+============================================================ */
+function kittenSVG(){
+  return `
+  <svg viewBox="0 0 200 190" class="w-full h-auto overflow-visible">
+    <!-- хвост -->
+    <path d="M150 150 q34 4 30 -30 q-2 -18 -18 -16" fill="none" stroke="#EFB287" stroke-width="13" stroke-linecap="round"/>
+    <!-- тело -->
+    <ellipse cx="100" cy="140" rx="60" ry="44" fill="#EFB287"/>
+    <ellipse cx="100" cy="150" rx="38" ry="28" fill="#F7D3AE"/>
+    <!-- уши -->
+    <path d="M62 60 L80 14 L104 48 Z" fill="#EFB287"/>
+    <path d="M138 60 L120 14 L96 48 Z" fill="#EFB287"/>
+    <path d="M70 54 L81 28 L95 48 Z" fill="#F6C39C"/>
+    <path d="M130 54 L119 28 L105 48 Z" fill="#F6C39C"/>
+    <!-- голова -->
+    <circle cx="100" cy="80" r="48" fill="#EFB287"/>
+    <!-- полосочки -->
+    <path d="M92 34 v10 M100 31 v11 M108 34 v10" stroke="#E09E6C" stroke-width="4.5" stroke-linecap="round"/>
+    <!-- глаза -->
+    <g class="blink-eyes">
+      <path d="M76 76 q9 -11 18 0" fill="none" stroke="#3A2E28" stroke-width="5" stroke-linecap="round"/>
+      <path d="M106 76 q9 -11 18 0" fill="none" stroke="#3A2E28" stroke-width="5" stroke-linecap="round"/>
+    </g>
+    <!-- носик и ротик -->
+    <path d="M95 88 h10 l-5 7 z" fill="#D97B6C" stroke="#D97B6C" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M100 96 q-2 7 -10 6 M100 96 q2 7 10 6" fill="none" stroke="#3A2E28" stroke-width="3.5" stroke-linecap="round"/>
+    <!-- румянец -->
+    <ellipse cx="65" cy="97" rx="9" ry="5.5" fill="#E88D7B" opacity=".5"/>
+    <ellipse cx="135" cy="97" rx="9" ry="5.5" fill="#E88D7B" opacity=".5"/>
+    <!-- усы -->
+    <g stroke="#3A2E28" stroke-width="2.5" stroke-linecap="round" opacity=".4">
+      <path d="M36 82 l20 6"/><path d="M34 96 l21 1"/><path d="M37 110 l19 -5"/>
+      <path d="M164 82 l-20 6"/><path d="M166 96 l-21 1"/><path d="M163 110 l-19 -5"/>
+    </g>
+    <!-- лапки -->
+    <ellipse cx="72" cy="170" rx="17" ry="13" fill="#F7D3AE"/>
+    <g class="paw-wave">
+      <ellipse cx="128" cy="170" rx="17" ry="13" fill="#F7D3AE"/>
+      <path d="M122 163 v5 M128 162 v6 M134 163 v5" stroke="#E0A878" stroke-width="3" stroke-linecap="round"/>
+    </g>
+    <path d="M66 163 v5 M72 162 v6 M78 163 v5" stroke="#E0A878" stroke-width="3" stroke-linecap="round"/>
+  </svg>`;
+}
+$('start-kitten').innerHTML = kittenSVG();
+$('hud-kitten').innerHTML = kittenSVG();
+$('pop-kitten').innerHTML = kittenSVG();
+$('res-kitten').innerHTML = kittenSVG();
+
+/* всплывашка котика */
+let popTimer = null;
+function showKitten(text, ms=4600){
+  $('pop-text').textContent = text;
+  $('kitten-pop').classList.remove('hiddenpop');
+  clearTimeout(popTimer);
+  popTimer = setTimeout(hideKitten, ms);
+}
+function hideKitten(){ $('kitten-pop').classList.add('hiddenpop'); }
+$('kitten-pop').addEventListener('pointerdown', hideKitten);
+
+/* ============================================================
+   ЧИСЛОВАЯ ПРЯМАЯ: геометрия
+============================================================ */
+const X0 = 34, STEP = 23, AXIS_Y = 84;
+const xFor = v => X0 + (v + 10) * STEP;
+const vFor = x => Math.max(-10, Math.min(30, Math.round((x - X0) / STEP) - 10));
+
+/* строим деления и подписи */
+(function buildTicks(){
+  let h = '';
+  for(let v=-10; v<=30; v++){
+    const x = xFor(v), major = v % 5 === 0;
+    const y1 = major ? 71 : 77;
+    h += `<line x1="${x}" y1="${y1}" x2="${x}" y2="89" stroke="${major ? '#6F6960' : '#C4BCAF'}" stroke-width="${major ? 3 : 2}" stroke-linecap="round"/>`;
+    const col = v===0 ? '#CE7048' : (major ? '#4A443C' : '#8B847A');
+    h += `<text x="${x}" y="112" text-anchor="middle" font-size="${major ? 14.5 : 12.5}" font-weight="${major ? 800 : 700}" fill="${col}" font-family="Nunito,sans-serif">${fmt(v)}</text>`;
+  }
+  $('g-ticks').innerHTML = h;
+})();
+
+/* дуга-стрелочка */
+function arcData(x1, x2){
+  const aY = AXIS_Y - 14;
+  const dx = x2 - x1;
+  const hgt = Math.min(Math.max(Math.abs(dx) * 0.30, 13), 46);
+  const mid = (x1 + x2) / 2;
+  const d = `M ${x1} ${aY} Q ${mid} ${aY - 2*hgt} ${x2} ${aY}`;
+  const ang = Math.atan2(2*hgt, (x2 - mid)) * 180 / Math.PI;
+  return { d, mid, apexY: aY - hgt, ang, endX:x2, endY:aY };
+}
+function arrowMarkup(x1, x2, color, labelText, labelColor, extra=''){
+  if (Math.abs(x2 - x1) < 4) return '';
+  const A = arcData(x1, x2);
+  return `
+    <path d="${A.d}" fill="none" stroke="${color}" stroke-width="5" stroke-linecap="round" ${extra}/>
+    <polygon points="0,0 -11,-5.5 -11,5.5" fill="${color}" transform="translate(${A.endX},${A.endY}) rotate(${A.ang})" ${extra}/>
+    <text x="${A.mid}" y="${A.apexY - 10}" text-anchor="middle" font-size="21" font-weight="900" fill="${labelColor}" stroke="#FFFDF9" stroke-width="6" paint-order="stroke" font-family="Nunito,sans-serif">${labelText}</text>`;
+}
+function dotMarkup(v, color, ring=false){
+  const x = xFor(v);
+  return ring
+    ? `<circle cx="${x}" cy="${AXIS_Y}" r="9.5" fill="rgba(255,255,255,.9)" stroke="${color}" stroke-width="4.5"/>
+       <circle cx="${x}" cy="${AXIS_Y}" r="3.5" fill="${color}"/>`
+    : `<circle cx="${x}" cy="${AXIS_Y}" r="8" fill="#fff" stroke="${color}" stroke-width="4.5"/>
+       <circle cx="${x}" cy="${AXIS_Y}" r="3" fill="${color}"/>`;
+}
+
+/* отрисовка слоя ученика */
+function drawUser(){
+  const gU = $('g-user'), gM = $('g-markers');
+  const faded = S.checked && !S.okNow;
+  let u='', m='';
+  if (S.startVal !== null){
+    let start = dotMarkup(S.startVal, '#CE7048');
+    if (faded) start = start.replaceAll('#CE7048"', '#CE7048" opacity=".4"');
+    m = start;
+    if (S.endVal !== null && S.endVal !== S.startVal){
+      const extra = faded ? 'opacity=".3"' : '';
+      u = arrowMarkup(xFor(S.startVal), xFor(S.endVal), '#CE7048', fmtD(S.endVal - S.startVal), '#D65A4E', extra);
+      m += `<circle cx="${xFor(S.endVal)}" cy="${AXIS_Y}" r="5.5" fill="#CE7048" ${extra}/>`;
+    }
+  }
+  gU.innerHTML = u; gM.innerHTML = m;
+}
+
+/* слой правильного решения */
+function drawCorrect(){
+  const t = cur(), r = res(t);
+  let h = arrowMarkup(xFor(t[0]), xFor(r), '#6F9B77', fmtD(r - t[0]), '#D65A4E');
+  h += dotMarkup(t[0], '#6F9B77', true);
+  h += `<circle cx="${xFor(r)}" cy="${AXIS_Y}" r="5.5" fill="#6F9B77"/>`;
+  $('g-correct').innerHTML = h;
+}
+
+/* ============================================================
+   БЕЙДЖИКИ ПОД ПРЯМОЙ
+============================================================ */
+function drawChips(){
+  let h='';
+  if (S.startVal !== null){
+    h += `<span class="inline-flex items-center gap-1.5 rounded-full bg-[#F7E3D7] text-[#8A5A3C] px-3.5 py-1.5 text-xs sm:text-sm font-black border border-[#EFD2BE]">начало · ${fmt(S.startVal)}</span>`;
+  }
+  if (S.endVal !== null){
+    h += `<span class="inline-flex items-center gap-1.5 rounded-full bg-[#FBE9E5] text-[#C05B4E] px-3.5 py-1.5 text-xs sm:text-sm font-black border border-[#F4CEC6]">шаг · ${fmtD(S.endVal - S.startVal)}</span>`;
+    h += `<span class="inline-flex items-center gap-1.5 rounded-full bg-[#F1EDE4] text-[#4A443C] px-3.5 py-1.5 text-xs sm:text-sm font-black border border-[#E5DECE]">конец · ${fmt(S.endVal)}</span>`;
+  }
+  $('chips').innerHTML = h;
+}
+
+/* ============================================================
+   ШАГИ, ПОДСКАЗКИ, КНОПКИ
+============================================================ */
+function ansParsed(){
+  const v = $('inp-ans').value.trim().replace('−','-');
+  return /^-?\d+$/.test(v) ? parseInt(v,10) : null;
+}
+function ansGiven(){ return ansParsed() !== null; }
+function arrowReady(){ return S.startVal!==null && S.endVal!==null && S.endVal!==S.startVal; }
+
+function setStepPills(){
+  const p1=$('pill-1'), p2=$('pill-2'), p3=$('pill-3');
+  [p1,p2,p3].forEach(p=>p.classList.remove('active','done'));
+  const a = ansGiven(), st = S.startVal!==null, ar = arrowReady();
+  if (S.checked){ p1.classList.add(S.stats.at(-1).ansOk?'done':'active'); p2.classList.add('done'); p3.classList.add(S.stats.at(-1).lineOk?'done':'active'); return; }
+  if (a) p1.classList.add('done'); else p1.classList.add('active');
+  if (st) p2.classList.add('done'); else if (a) p2.classList.add('active');
+  if (ar) p3.classList.add('done'); else if (st) p3.classList.add('active');
+}
+
+const HINTS = {
+  answer:'Шаг 1. Впиши ответ в окошко. Отрицательное число? Нажми кнопку ± — она ставит минус!',
+  point :'Шаг 2. Нажми на числовую прямую — отметь точку, с которой начинаем счёт.',
+  draw  :'Шаг 3. Зажми точку (или любое место на прямой) и потяни стрелочку на нужное число делений.',
+  ready :'Супер! Красная цифра показывает твой шаг. Всё верно? Жми «Проверить»!',
+  doneBad:'Разбери правильное решение — а мы двигаемся дальше!'
+};
+function setHint(k, warn=false){
+  const h=$('hint'); h.textContent=HINTS[k];
+  h.style.color = warn ? '#C05B4E' : '';
+}
+function updateUI(){
+  const wrap=$('line-wrap');
+  const locked = !ansGiven() || S.checked;
+  wrap.classList.toggle('locked', locked);
+  wrap.classList.toggle('unlocked', !locked);
+  $('btn-reset').disabled = locked || S.startVal===null || S.dragging;
+  const main=$('btn-main');
+  if (!S.checked){
+    $('btn-main-label').textContent='Проверить';
+    $('btn-main-icon').setAttribute('data-lucide','check-check');
+    main.disabled = !arrowReady();
+    setHint(!ansGiven() ? 'answer' : S.startVal===null ? 'point' : !arrowReady() ? 'draw' : 'ready');
+  } else {
+    $('btn-main-label').textContent = S.idx === TASKS.length-1 ? 'Результаты' : 'Дальше';
+    $('btn-main-icon').setAttribute('data-lucide', S.idx === TASKS.length-1 ? 'flag' : 'arrow-right');
+    main.disabled = false;
+  }
+  setStepPills();
+  icons();
+}
+
+/* ============================================================
+   ВЗАИМОДЕЙСТВИЕ С ПРЯМОЙ
+============================================================ */
+function svgX(e){
+  const r = $('svg-line').getBoundingClientRect();
+  return (e.clientX - r.left) / r.width * 1000;
+}
+function lineDown(e){
+  if (!ansGiven() || S.checked){
+    if (!S.checked){
+      setHint('answer', true);
+      $('inp-ans').classList.add('hint-wiggle');
+      setTimeout(()=>$('inp-ans').classList.remove('hint-wiggle'), 500);
+    }
+    return;
+  }
+  e.preventDefault();
+  const v = vFor(svgX(e));
+  if (S.startVal === null){ S.startVal = v; S.endVal = v; }
+  S.dragging = true;
+  hideKitten();
+  drawUser(); drawChips(); updateUI();
+}
+function lineMove(e){
+  if (!S.dragging) return;
+  e.preventDefault();
+  S.endVal = vFor(svgX(e));
+  drawUser(); drawChips(); updateUI();
+}
+function lineUp(){
+  if (!S.dragging) return;
+  S.dragging = false;
+  updateUI();
+}
+const hitEl = $('svg-line');
+hitEl.addEventListener('pointerdown', lineDown);
+window.addEventListener('pointermove', lineMove, {passive:false});
+window.addEventListener('pointerup', lineUp);
+window.addEventListener('pointercancel', lineUp);
+
+/* сброс линии */
+$('btn-reset').addEventListener('click', ()=>{
+  S.startVal = null; S.endVal = null;
+  $('g-user').innerHTML=''; $('g-markers').innerHTML=''; $('g-correct').innerHTML='';
+  drawChips(); updateUI();
+});
+
+/* ввод ответа */
+$('inp-ans').addEventListener('input', ()=>{
+  let v = $('inp-ans').value.replace(/−/g,'-').replace(/[^0-9-]/g,'');
+  if (v.indexOf('-') > 0) v = v.replace(/-/g,'');
+  if ((v.match(/-/g)||[]).length > 1) v = '-' + v.replace(/-/g,'');
+  $('inp-ans').value = v;
+  $('inp-ans').classList.toggle('filled', v.length>0);
+  $('btn-sign').classList.toggle('minus', v.startsWith('-'));
+  updateUI();
+});
+
+/* кнопка ± — ставит/убирает минус (удобно с телефона) */
+$('btn-sign').addEventListener('pointerdown', e=>e.preventDefault());
+$('btn-sign').addEventListener('click', ()=>{
+  if (S.checked) return;
+  const inp=$('inp-ans');
+  let v=inp.value.replace(/−/g,'-');
+  v = v.startsWith('-') ? v.slice(1) : '-' + v;
+  inp.value=v;
+  inp.classList.toggle('filled', v.length>0);
+  $('btn-sign').classList.toggle('minus', v.startsWith('-'));
+  updateUI();
+  inp.focus({preventScroll:true});
+});
+$('inp-ans').addEventListener('keydown', e=>{
+  if (e.key === 'Enter'){ e.preventDefault(); if (!$('btn-main').disabled) $('btn-main').click(); }
+});
+$('inp-ans').addEventListener('focus', hideKitten);
+
+/* ============================================================
+   ПРОВЕРКА
+============================================================ */
+function wordDivision(n){
+  const a = Math.abs(n) % 10, b = Math.abs(n) % 100;
+  if (a===1 && b!==11) return 'деление';
+  if (a>=2 && a<=4 && (b<10 || b>=20)) return 'деления';
+  return 'делений';
+}
+function explainText(t){
+  const r = res(t);
+  const dir  = t[1]==='+' ? 'вправо' : 'влево';
+  const verb = t[1]==='+' ? 'Прибавляем' : 'Вычитаем';
+  return `Начинаем в точке ${fmt(t[0])}. ${verb} ${t[2]} — идём ${dir} на ${t[2]} ${wordDivision(t[2])}. Ответ: ${fmt(r)}.`;
+}
+function burst(x, y){
+  const colors=['#CE7048','#6F9B77','#F2C94C','#E5A87E','#8FB7A5','#D97B6C'];
+  for(let i=0;i<14;i++){
+    const d=document.createElement('span');
+    d.className='burst-dot';
+    d.style.left=x+'px'; d.style.top=y+'px';
+    d.style.background=colors[i%colors.length];
+    const ang=Math.random()*Math.PI*2, dist=50+Math.random()*70;
+    d.style.setProperty('--dx', Math.cos(ang)*dist+'px');
+    d.style.setProperty('--dy', (Math.sin(ang)*dist-40)+'px');
+    document.body.appendChild(d);
+    setTimeout(()=>d.remove(), 900);
+  }
+}
+
+function showBanner(ok){
+  const b=$('banner'), t=cur(), r=res(t);
+  b.classList.remove('hidden');
+  if (ok){
+    b.style.background='#E7F0E7'; b.style.border='2px solid #CBDFCB';
+    $('banner-icon').style.background='#6F9B77';
+    $('banner-icon').innerHTML='<i data-lucide="party-popper" class="w-5 h-5 text-white"></i>';
+    $('banner-text').style.color='#3E5A44';
+    $('banner-text').textContent='Верно! Балл твой — так держать!';
+    $('banner-explain').style.color='#3E5A44';
+    $('banner-explain').textContent=explainText(t);
+  } else {
+    b.style.background='#FBE9E5'; b.style.border='2px solid #F4CEC6';
+    $('banner-icon').style.background='#D65A4E';
+    $('banner-icon').innerHTML='<i data-lucide="lightbulb" class="w-5 h-5 text-white"></i>';
+    $('banner-text').style.color='#8A3A30';
+    $('banner-text').textContent='Ошибочка! Смотри, как правильно:';
+    $('banner-explain').style.color='#8A3A30';
+    $('banner-explain').textContent=explainText(t);
+  }
+  icons();
+}
+
+function check(){
+  const t=cur(), r=res(t);
+  const ua = ansParsed();
+  const ansOk  = ua === r;
+  const lineOk = S.startVal === t[0] && S.endVal === r;
+  const ok = ansOk && lineOk;
+
+  S.checked = true; S.okNow = ok;
+  S.stats.push({a:t[0], op:t[1], b:t[2], res:r,
+    userAns: ua===null ? '—' : ua, ansOk, lineOk, ok});
+
+  /* окошко ответа → статичное */
+  const inp=$('inp-ans'), st=$('ans-static');
+  $('btn-sign').classList.add('hidden');
+  if (ok || ansOk){
+    inp.classList.add('hidden'); st.classList.remove('hidden'); st.classList.add('inline-flex');
+    st.innerHTML=`<span class="px-2 text-[#58805F]">${fmt(r)}</span><span class="w-8 h-8 rounded-xl bg-[#E7F0E7] flex items-center justify-center"><i data-lucide="check" class="w-5 h-5 text-[#58805F]"></i></span>`;
+  } else {
+    inp.classList.add('hidden'); st.classList.remove('hidden'); st.classList.add('inline-flex');
+    st.innerHTML=`<span class="px-1 text-[#C05B4E] line-through decoration-[3px] opacity-70">${ua===null?'?':fmt(ua)}</span><span class="px-2 text-[#58805F]">${fmt(r)}</span><span class="w-8 h-8 rounded-xl bg-[#E7F0E7] flex items-center justify-center"><i data-lucide="check" class="w-5 h-5 text-[#58805F]"></i></span>`;
+  }
+
+  drawUser();
+  if (!ok){
+    drawCorrect();
+    showKitten('Не переживай! Разбери решение — у тебя всё получится!', 5200);
+  } else {
+    S.score++;
+    $('score-num').textContent = S.score;
+    $('hud-score').classList.remove('score-pulse'); void $('hud-score').offsetWidth;
+    $('hud-score').classList.add('score-pulse');
+    const br=$('btn-main').getBoundingClientRect();
+    burst(br.left+br.width/2, br.top);
+  }
+  showBanner(ok);
+  updateUI();
+}
+
+/* ============================================================
+   ПЕРЕХОДЫ ЗАДАНИЙ
+============================================================ */
+function renderTask(){
+  const t=cur();
+  S.startVal=null; S.endVal=null; S.dragging=false; S.checked=false; S.okNow=false;
+  $('g-user').innerHTML=''; $('g-markers').innerHTML=''; $('g-correct').innerHTML='';
+  $('eq-a').textContent = fmt(t[0]);
+  $('eq-op').textContent = t[1]==='+' ? '+' : '−';
+  $('eq-b').textContent = t[2];
+  const inp=$('inp-ans'), st=$('ans-static');
+  $('btn-sign').classList.remove('hidden','minus');
+  inp.value=''; inp.classList.remove('hidden','filled');
+  st.classList.add('hidden'); st.classList.remove('inline-flex');
+  $('banner').classList.add('hidden');
+  $('hud-task').textContent = `Пример ${S.idx+1} из ${TASKS.length}`;
+  $('bar-fill').style.width = (S.idx)/TASKS.length*100 + '%';
+  drawChips();
+  $('task-card').classList.remove('card-pop'); void $('task-card').offsetWidth;
+  $('task-card').classList.add('card-pop');
+  updateUI();
+  setTimeout(()=>inp.focus({preventScroll:true}), 350);
+
+  /* котик-подбадриватель: перед первым и далее через каждую пару примеров */
+  const n = S.idx + 1;
+  if (n === 1){
+    setTimeout(()=>showKitten(`Привет, ${S.name}! Я Мурчик. Решай примеры, а я буду подбадривать!`, 6000), 700);
+  } else if (n === 15){
+    setTimeout(()=>showKitten('Половина пути пройдена! Ты большой молодец!', 5000), 650);
+  } else if (n === 29){
+    setTimeout(()=>showKitten('Осталось всего два примера! Финиш уже близко!', 5000), 650);
+  } else if (n % 2 === 1){
+    setTimeout(()=>showKitten(PHRASES[Math.floor(n/2) % PHRASES.length], 4600), 650);
+  }
+}
+
+$('btn-main').addEventListener('click', ()=>{
+  if (!S.checked){ check(); return; }
+  if (S.idx >= TASKS.length-1){ showResults(); return; }
+  S.idx++;
+  hideKitten();
+  renderTask();
+});
+
+/* ============================================================
+   РЕЗУЛЬТАТЫ
+============================================================ */
+function showResults(){
+  hideKitten();
+  $('scr-game').classList.add('hidden');
+  $('scr-results').classList.remove('hidden');
+  window.scrollTo({top:0, behavior:'smooth'});
+  $('bar-fill').style.width='100%';
+
+  const okCount = S.stats.filter(s=>s.ok).length;
+  const pct = Math.round(okCount / TASKS.length * 100);
+  $('res-name').textContent = `${S.name} ${S.surname}`;
+  $('res-date').textContent = new Date().toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'});
+  $('res-score').textContent = okCount;
+  $('res-ok').textContent = okCount;
+  $('res-bad').textContent = TASKS.length - okCount;
+  $('res-pct').textContent = pct + '%';
+  $('res-ring').style.background = `conic-gradient(#6F9B77 ${pct}%, #EDE6D9 ${pct}%)`;
+
+  let title, verdict;
+  if (pct>=90){ title='Потрясающе!'; verdict='Мурчик в восторге! Ты настоящий чемпион числовой прямой!'; }
+  else if (pct>=70){ title='Отличная работа!'; verdict='Очень достойный результат! Ещё чуть-чуть — и будет идеально.'; }
+  else if (pct>=50){ title='Хорошо получилось!'; verdict='Половина успеха уже есть! Потренируйся ещё — всё обязательно получится.'; }
+  else { title='Главное — не сдаваться!'; verdict='Повтори тему и попробуй ещё раз. Мурчик верит в тебя!'; }
+  $('res-title').textContent = title;
+  $('res-verdict').textContent = verdict;
+
+  /* таблица */
+  let rows='';
+  S.stats.forEach((s,i)=>{
+    const expr = `${fmt(s.a)} ${s.op==='+'?'+':'−'} ${s.b}`;
+    const badge = s.ok
+      ? '<span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-[#E7F0E7]"><i data-lucide="check" class="w-4 h-4 text-[#58805F]"></i></span>'
+      : '<span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-[#FBE9E5]"><i data-lucide="x" class="w-4 h-4 text-[#C05B4E]"></i></span>';
+    const uaCls = s.ansOk ? 'text-[#332E29]' : 'text-[#C05B4E] line-through decoration-2';
+    rows += `<tr class="rowline ${i%2? 'bg-[#FFFDF9]':'bg-white'}">
+      <td class="py-2.5 pl-4 sm:pl-5 pr-2 font-black text-[#B9B0A2]">${i+1}</td>
+      <td class="py-2.5 px-2 font-black">${expr}</td>
+      <td class="py-2.5 px-2 font-black ${uaCls}">${typeof s.userAns==='number'?fmt(s.userAns):s.userAns}</td>
+      <td class="py-2.5 px-2 font-black text-[#58805F]">${fmt(s.res)}</td>
+      <td class="py-2.5 pl-2 pr-4 sm:pr-5 text-right">${badge}</td>
+    </tr>`;
+  });
+  $('res-tbody').innerHTML = rows;
+  icons();
+
+  if (pct >= 70){
+    setTimeout(()=>{ const r=$('res-kitten').getBoundingClientRect(); burst(r.left+50, r.top+50); }, 500);
+    setTimeout(()=>{ const r=$('res-ring').getBoundingClientRect(); burst(r.left+50, r.top+50); }, 900);
+  }
+}
+
+/* сохранение статистики: JPEG + системное меню «Поделиться» */
+$('btn-save').addEventListener('click', async ()=>{
+  const btn=$('btn-save');
+  const old=btn.innerHTML;
+  btn.innerHTML='<span class="w-5 h-5 animate-spin inline-flex items-center justify-center">◌</span> Секундочку…';
+  btn.disabled=true;
+  try{
+    const data=await window.__murzikRenderJPEG($('result-shot'));
+    const nm=(`${S.surname}_${S.name}`).trim().replace(/\s+/g,'_') || 'результаты';
+    const filename=`числовая_прямая_${nm}.jpg`;
+    const blob=await (await fetch(data)).blob();
+    const file=new File([blob],filename,{type:'image/jpeg'});
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      await navigator.share({title:'Результаты игры «Числовая прямая»',files:[file]});
+    }else{
+      const a=document.createElement('a');
+      a.download=filename; a.href=data; document.body.appendChild(a); a.click(); a.remove();
+    }
+  }catch(e){
+    if(e && e.name!=='AbortError') alert('Не получилось сохранить JPEG. Можно сделать скриншот результата.');
+  }finally{
+    btn.innerHTML=old; btn.disabled=false; icons();
+  }
+});
+
+/* заново */
+$('btn-again').addEventListener('click', ()=>{
+  S.idx=0; S.score=0; S.stats=[];
+  $('score-num').textContent='0';
+  $('scr-results').classList.add('hidden');
+  $('scr-start').classList.remove('hidden');
+  window.scrollTo({top:0, behavior:'smooth'});
+  checkNames();
+  icons();
+});
+
+/* ============================================================
+   СТАРТ ИГРЫ
+============================================================ */
+function checkNames(){
+  const ok = $('inp-name').value.trim().length>0 && $('inp-surname').value.trim().length>0;
+  $('btn-start').disabled = !ok;
+}
+$('inp-name').addEventListener('input', checkNames);
+$('inp-surname').addEventListener('input', checkNames);
+[$('inp-name'),$('inp-surname')].forEach(el=>el.addEventListener('keydown',e=>{
+  if(e.key==='Enter' && !$('btn-start').disabled) $('btn-start').click();
+}));
+
+$('btn-start').addEventListener('click', ()=>{
+  S.name = $('inp-name').value.trim();
+  S.surname = $('inp-surname').value.trim();
+  $('scr-start').classList.add('hidden');
+  $('scr-game').classList.remove('hidden');
+  window.scrollTo({top:0, behavior:'smooth'});
+  renderTask();
+  icons();
+});
+
+icons();
+</script>
+</body>
+</html>
